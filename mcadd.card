@@ -1,0 +1,6 @@
+# Input parameters for mcadd program; do not modify comments after “#”!
+NmFin_comb_230825                  #output combined PDF ensemble from LHAPDF6
+NLO                      #order of alpha_s (NLO/NNLO)
+0.118                    #alpha_s(MZ), from 0.116-0.120, with step 0.001
+# List all input PDF ensembles in the next line:
+MC_Nm1_FreeC_01FixCP_xP075_updated_xrange MC_Nm1_FreeC_LFixCP_Bs2_xstretch_updated_xrange MC_Nm2_FixC_LFixCP_updated_xrange MC_Nm2_FreeC_HFixCP_5000_updated_xrange

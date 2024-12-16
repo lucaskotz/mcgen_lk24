@@ -1,0 +1,20 @@
+# Input parameters for mcgen program; do not modify comments after "#"!
+# Parameters for generation of random replicas
+nCTEQ15FullNuc_1_1                 # input PDF ensemble from LHAPDF6 
+MCnCTEQ15FullNuc_1_1                 # output PDF ensemble, its directory with output 
+he90                     # input error type, he68/he90/mc=Hessian 68%/90%/MC
+101                     # number of MC replicas to generate          
+2001                        # the ID of the first MC replica to generate 
+-1                       # ktype
+../inc/xgrid-ct14.dat    # grid with x values for output LHAPDF grids 
+../inc/qgrid-ct14.dat    # grid with Q values for output LHAPDF grids 
+NNLO                      # order of alpha_s (NLO/NNLO)
+0.118                    # alpha_s(MZ)=0.116, 0.117, 0.118, 0.119, or 0.120
+
+= See README for explanation of all input parameters =====
+
+ktype=xy
+  ktype > 0: symmetric errors
+  ktype < 0: asymmetric errors
+  y=1,2,3: linear/log/Watt-Thorne sampling
+  x=0,1: unshifted/shifted
