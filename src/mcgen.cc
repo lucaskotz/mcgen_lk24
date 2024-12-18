@@ -415,14 +415,28 @@ int MCGenerateLHAPDF()
   // imc denotes the ID of the output MC replica. The zeroth output replica,
   // corresponding to imc=0, is just the copied zeroth set of the input set
   iran = 0;
+  outfile.open("MC_distances.txt"); // lk24 create header for distance output file
+  outfile << "# iMC\td" << endl;
   for (int imc = 0; imc < nmc + 1; ++imc)
   {
 
     double rr[nmem / 2];
+    double Dout = 0;
     if (err_type != "mc")
+      //lk24 included routine to print out the D=(1/sqrt(nmem))Sum(rr[imem]^2) for each replica.
       for (int imem = 1; imem <= nmem / 2; imem++)
-        rr[imem] = rn[iran++] * ErrorScaling;
-
+      {
+	rr[imem] = rn[iran++] * ErrorScaling;
+	cout << "rr[" << imem << "]: " << rr[imem] <<endl; 
+	Dout += pow(rr[imem],2); // lk24 sum the square of parameters rr
+	cout << "Dout in for loop: " << Dout << endl;
+      }
+    double Dout_norm = sqrt( 1. / (nmem / 2.) );
+    Dout *= Dout_norm * Dout; // lk24 multiply Dout by (1 / sqrt(nmem/2) ) 
+    cout << "Dout out of for loop: " << Dout << endl;
+    
+    outfile << imc << "\t" << Dout << endl;
+    
     // lk23 added routine to perform task for each subgrid
     for (int isub = 0; isub < nsub; ++isub)
     {
@@ -516,6 +530,8 @@ int MCGenerateLHAPDF()
       } // for (int ix
     } // for (int isub
   } // for (int imc #1...
+  outfile.clear(); // lk24 clear and close outfile after finishing imc loop
+  outfile.close();
 
   // Create LHAPDF6 .dat file for each final MC replica.
   // imc denotes the ID of the output MC replica. The zeroth output replica,

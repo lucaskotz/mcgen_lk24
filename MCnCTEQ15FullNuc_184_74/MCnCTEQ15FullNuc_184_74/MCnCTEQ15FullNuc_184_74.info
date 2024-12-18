@@ -1,0 +1,28 @@
+SetDesc: "Minimal parameterisation. NLO positive pion fitted to Drell-Yan data of experiments NA10, E615, prompt photon production data of experiment WA70, and selected points from the leading-neutron data. Nuclear PDF set nCTEQ15FullNuc_184_74 was used for tungsten target."
+Authors: "FantoPI23"
+Format: lhagrid1
+DataVersion: 1
+NumMembers: 101
+Particle: 2212
+Flavors: [-6, -5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 6, 21, ]
+OrderQCD: 2
+FlavorScheme: variable
+NumFlavors: 6
+ErrorType: replicas
+ErrorConfLevel: 68
+XMin: 0.0001
+XMax: 1
+QMin: 1
+QMax: 1000
+MZ: 91.1876
+MUp: 0
+MDown: 0
+MStrange: 0
+MCharm: 1.43
+MBottom: 4.5
+MTop: 173
+AlphaS_MZ: 0.118000
+AlphaS_OrderQCD: 2
+AlphaS_Type: ipol
+AlphaS_Qs:  [5.76715e+00,  7.07072e+00,  8.75819e+00,  1.09657e+01,  1.38856e+01,  1.77929e+01,  2.30855e+01,  3.03471e+01,  4.04448e+01,  5.46864e+01,  7.50724e+01,  1.04712e+02,  1.48517e+02,  2.14380e+02,  3.15212e+02,  4.72537e+02,  7.22946e+02,  1.12995e+03,  1.80616e+03,  2.95593e+03,  4.95886e+03,  8.53814e+03,  1.51079e+04,  2.75107e+04,  5.16275e+04,  1.00000e+05]
+AlphaS_Vals: [2.04638e-01, 1.93923e-01, 1.83856e-01, 1.74388e-01, 1.65473e-01, 1.57071e-01, 1.49144e-01, 1.41660e-01, 1.34588e-01, 1.27902e-01, 1.21575e-01, 1.15586e-01, 1.09913e-01, 1.04537e-01, 9.94398e-02, 9.46049e-02, 9.00171e-02, 8.56622e-02, 8.15271e-02, 7.75995e-02, 7.38679e-02, 7.03216e-02, 6.69506e-02, 6.37456e-02, 6.06978e-02,  5.77990e-02]
