@@ -448,7 +448,8 @@ public:
 
     for (int i = 1; i < Nfiles; i++)
     {
-      if (LHAGridsFromFiles[i]->headers != headerscomp)
+      // lk24 now compares 2nd element of the headers, which is the format.
+      if (LHAGridsFromFiles[i]->headers[1] != headerscomp[1])
       {
         std::cout << "Error: headers for file " << i + 1 << " does not match with first input file." << std::endl;
         exit(1);
