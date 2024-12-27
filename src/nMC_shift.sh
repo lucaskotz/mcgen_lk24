@@ -11,26 +11,46 @@ hessianPDF="$1"
 nMCname="$2"
 NHessian="$3"
 NnMC="$4"
+seedfile="$5"
 
-nMCcentral=$nMCname/${nMCname}_0000.dat;
+echo "$hessianPDF $nMCname $NHessian $NnMC $seedfile"
 
-for inMC in $(seq -f "%04g" 1 $NnMC); do
+# All zero-padded to 4 digits for consistency
+mapfile -t random_order < <(seq -f "%04g" 1 ${NnMC} | shuf --random-source=${seedfile})
 
-    outputname=${nMCname}_shifted_hessian_${inMC}
-    mkdir ${outputname}
-    cp ${hessianPDF}/${hessianPDF}.info ${outputname}/${hessianPDF}_${inMC}_shifted.info
+echo "random_order length: ${#random_order[@]}"
 
-    inMCPDF=${nMCname}/${nMCname}_${inMC}.dat
+# Generate the list of files from 1 to 100, zero-padded to 4 digits
+files=$(seq -f "${nMCname}/${nMCname}_%04g.dat" 1 $NnMC)
+
+outputname=${hessianPDF}_MC_shifted-Hessian+unshifted-nuclear
+mkdir ${outputname}
+
+# Run the command with the generated file list
+./mcgen.x average "${nMCname}_avg.dat" $files
+
+cp "${hessianPDF}/${hessianPDF}.info" "${outputname}/${hessianPDF}_MC_shifted-Hessian+unshifted-nuclear.info"
+cp "${hessianPDF}/${hessianPDF}_0000.dat" "${outputname}/${hessianPDF}_MC_shifted-Hessian+unshifted-nuclear_0000.dat"
+
+echo "Adding nMC shift to Hessian sets."
+
+for k in $(seq -f "%04g" 1 $NHessian); do
+
+    kp="${random_order[$((10#$k - 1))]}"
+
+    knMCPDF="${nMCname}/${nMCname}_${kp}.dat"
     
-    ./mcgen.x add nMC_shift.dat ${nMCcentral} ${inMCPDF} -1 1
+    Deltakfile=${hessianPDF}_nuclear_shift.dat
+    nHfile=${hessianPDF}_MC_shifted-Hessian+unshifted-nuclear_$k.dat
+    kHessian=${hessianPDF}/${hessianPDF}_$k.dat
     
-    for iHessian in $(seq -f "%04g" 0 $NHessian); do
-	iShiftPDF=${hessianPDF}_${inMC}_shifted_${iHessian}.dat
-	iHessianPDF=${hessianPDF}/${hessianPDF}_${iHessian}.dat
-	./mcgen.x add ${iShiftPDF} ${iHessianPDF} nMC_shift.dat 1 1
-	mv ${iShiftPDF} ${outputname}
-    done
-    
-    rm -f nMC_shift.dat
+    ./mcgen.x add "${Deltakfile}" ${nMCname}_avg.dat ${knMCPDF} -1 1
 
+    ./mcgen.x add "${nHfile}" ${Deltakfile} ${kHessian} 1 1
+
+    mv ${nHfile} ${outputname}
+    
+    rm -f ${Deltakfile}
 done
+
+echo "Finished nMC_shift for $hessianPDF"
