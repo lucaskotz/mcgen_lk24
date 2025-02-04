@@ -427,13 +427,10 @@ int MCGenerateLHAPDF()
       for (int imem = 1; imem <= nmem / 2; imem++)
       {
 	rr[imem] = rn[iran++] * ErrorScaling;
-	cout << "rr[" << imem << "]: " << rr[imem] <<endl; 
 	Dout += pow(rr[imem],2); // lk24 sum the square of parameters rr
-	cout << "Dout in for loop: " << Dout << endl;
       }
     double Dout_norm = sqrt( 1. / (nmem / 2.) );
     Dout *= Dout_norm * Dout; // lk24 multiply Dout by (1 / sqrt(nmem/2) ) 
-    cout << "Dout out of for loop: " << Dout << endl;
     
     outfile << imc << "\t" << Dout << endl;
     
@@ -653,22 +650,26 @@ int MCLHAPDF2plt()
   std::vector<int> inflavors = pdfs[0]->flavors();
   // PDF flavors to write to the LHAPDF grid
   const int nfltot = inflavors.size(); // Maximal number of PDF flavors
-  // lk24 created outflavors to be unsorted flavors
+  // lk24 created to match META representation
   std::vector<int> outflavors = inflavors;
 
-  // lk24 commented out outdated code
-  // // Replace 21 with 0 in the copy
-  // for (int i = 0; i < nfltot; ++i)
-  //   if (inflavors[i] == 21)
-  //     inflavors[i] = 0;
 
-  // // Sort the copy of the array
-  // std::sort(inflavors.begin(), inflavors.end());
+  // lk25 sort flavors to fit temporary META representation
+  // Replace 21 with 0 in the copy
+  for (int i = 0; i < nfltot; ++i)
+    if (outflavors[i] == 21)
+      outflavors[i] = 0;
 
-  // // Replace 0 back to 21 in the sorted copy
-  // for (int i = 0; i < nfltot; ++i)
-  //   if (inflavors[i] == 0)
-  //     inflavors[i] = 21;  
+  // Sort the copy of the array
+  std::sort(outflavors.begin(), outflavors.end());
+
+  // Replace 0 back to 21 in the sorted copy
+  for (int i = 0; i < nfltot; ++i)
+    if (outflavors[i] == 0)
+      outflavors[i] = 21;  
+
+  for (int i = 0; i < nfltot; i++)
+    cout << outflavors[i] << " " << endl;
   
   // // Order LHAPDF flavor indices in PDF flavor order (u<->d)
   // for (int i = 0; i < inflavors.size(); i++)
@@ -683,7 +684,6 @@ int MCLHAPDF2plt()
   //     inflavors[i] = 1;
   // }
 
-  std::sort(inflavors.begin(), inflavors.end(), pltSort);
 
   vector<double> xingrid, qingrid; // define x, and Q grids for the output config file
   int nxintot = 0, nqintot = 0;
@@ -713,38 +713,6 @@ int MCLHAPDF2plt()
     }
   }
 
-  // lk24 parse mc, mb, mt, alphas_MZ, MZ, alphas_OrderQCD, NumFlavors, and OrderQCD using get_entry()   
-  double mcin = stod(set.get_entry("MCharm"));
-  double mbin = stod(set.get_entry("MBottom"));
-  double mtin = stod(set.get_entry("MTop"));
-
-  double alphasMZin = stod(set.get_entry("AlphaS_MZ"));
-  double mzin = stod(set.get_entry("MZ"));
-  int alphas_orderin = stoi(set.get_entry("AlphaS_OrderQCD"));
-
-  int NumFlavsin = stoi(set.get_entry("NumFlavors"));
-  int orderqcdin = stoi(set.get_entry("OrderQCD"));
-  
-  // lk24 write the xin, qin, and flavors to the output file
-  outfile.open(inpdfname + "_mp4lhc_gridgen.config");
-  outfile << "# mc  mb  mt  alphas_mZ  mZ  alphas_order  Nfl  Order_QCD" << endl;
-  outfile << mcin << "  " << mbin << "  " << mtin << "  " << alphasMZin << "  " << mzin << "  " << alphas_orderin << "  " << NumFlavsin << "  " << orderqcdin << endl;
-  outfile << "# flavors: " << endl;
-  for (int i = 0; i < nfltot-1; ++i)
-    outfile << outflavors[i] << "  ";
-  outfile << outflavors [nfltot-1] << endl;
-  outfile << "# x values: " << endl;
-  for (int i = 0; i < nxintot-1; ++i)
-    outfile << xingrid[i] << "  ";
-  outfile << xingrid[nxintot-1] << endl;
-  outfile << "# q values: " << endl;
-  for (int i = 0; i < nqintot-1; ++i)
-    outfile << qingrid[i] << "  ";
-  outfile << qingrid[nqintot-1] << endl;
-  
-  outfile.clear();
-  outfile.close();
-
   // lk24 read x adn q values from external file xpltname qpltname
   //Read hardwired x values for .plt files
   infile.open(xpltname.c_str());
@@ -765,6 +733,81 @@ int MCLHAPDF2plt()
   }
   infile.clear();
   infile.close();
+
+  
+
+  // lk24 parse mc, mb, mt, alphas_MZ, MZ, alphas_OrderQCD, NumFlavors, and OrderQCD using get_entry()   
+  double mcin = stod(set.get_entry("MCharm"));
+  double mbin = stod(set.get_entry("MBottom"));
+  double mtin = stod(set.get_entry("MTop"));
+
+  double alphasMZin = stod(set.get_entry("AlphaS_MZ"));
+  double mzin = stod(set.get_entry("MZ"));
+  int alphas_orderin = stoi(set.get_entry("AlphaS_OrderQCD"));
+
+  int NumFlavsin = stoi(set.get_entry("NumFlavors"));
+  int orderqcdin = stoi(set.get_entry("OrderQCD"));
+
+  // lk25 added Q0, number of EV sets, and PDG hadron ID for the new .mev format
+  double Q0in = stod(set.get_entry("QMin"));
+  int NEVin = stoi(set.get_entry("NumMembers")) - 1; 
+  //int iPDGin = stoi(set.get_entry("Particle"));
+  
+  // lk25 commented out config file
+  /*
+  // lk24 write the xin, qin, and flavors to the output file
+  outfile.open(inpdfname + "_mp4lhc_gridgen.config");
+  outfile << "# mc  mb  mt  alphas_mZ  mZ  alphas_order  Nfl  Order_QCD" << endl;
+  outfile << mcin << "  " << mbin << "  " << mtin << "  " << alphasMZin << "  " << mzin << "  " << alphas_orderin << "  " << NumFlavsin << "  " << orderqcdin << endl;
+  outfile << "# flavors: " << endl;
+  for (int i = 0; i < nfltot-1; ++i)
+    outfile << outflavors[i] << "  ";
+  outfile << outflavors [nfltot-1] << endl;
+  outfile << "# x values: " << endl;
+  for (int i = 0; i < nxintot-1; ++i)
+    outfile << xingrid[i] << "  ";
+  outfile << xingrid[nxintot-1] << endl;
+  outfile << "# q values: " << endl;
+  for (int i = 0; i < nqintot-1; ++i)
+    outfile << qingrid[i] << "  ";
+  outfile << qingrid[nqintot-1] << endl;
+  
+  outfile.clear();
+  outfile.close();
+  */
+
+  // lk25 create .mev file v.2025-02 from Pavel
+  outfile.open(inpdfname + ".mev");
+  outfile << "#v.2025-02# .mev file created from " + inpdfname + "LHAPDF set" << endl;
+  outfile << orderqcdin << ", " << Q0in << ", " << alphasMZin << ", " << mzin << " # QCD order ,Q0 (GeV), alphas(MZ), MZ" << endl;
+  outfile << mcin << ", " << mbin << ", " << mtin << " # mcharm, mbottom, mtop (GeV)" << endl;
+  outfile << NEVin << ", iPDG # Number of EV sets, PDG hadron ID (2212=proton, 211=pi+)" << endl;
+  outfile << "# Flavors in the LHAPDF grid and compressed META representation" << endl;
+  for (int i = 0; i < nfltot-1; i++)
+    outfile << outflavors[i] << ", ";
+  outfile << outflavors[nfltot-1] << endl;
+  outfile << "# enter META representation here" << endl; //lk25 replace line with either evolution basis IDs or physical
+  outfile << "# x values:" << endl;
+  for (int i = 0; i < nxtot-1; i++)
+    outfile << xgrid[i] << "\t";
+  outfile << xgrid[nxtot-1] << endl;
+  outfile << "# q values:" << endl;
+  for (int i = 0; i < nqtot-1; i++)
+    outfile << qgrid[i] << "\t";
+  outfile << qgrid[nqtot-1] << endl;
+  for (int imem = 0; imem < NEVin + 1; imem++)
+  {
+    outfile << "# EV set " << imem << "---" << endl;
+    for (int ifl = 0; ifl < nfltot; ifl++)
+    {
+      for (int ix = 0; ix < nxtot-1; ix++)
+	outfile << "[" << outflavors[ifl] << "][" << ix << "]\t";
+      outfile << "[" << outflavors[ifl] << "][" << nxtot-1 << "]" << endl;
+    }
+  }
+  outfile.clear();
+  outfile.close();
+  
   
   // lk23 write the x, q, and flavors to the output file
   outfile.open("flavor_output.txt");
@@ -828,7 +871,7 @@ int MCLHAPDF2plt()
         for (int ifl = 0; ifl < nfltot; ++ifl)
         {
 
-          int pid = inflavors[ifl];
+          int pid = outflavors[ifl];
           const double xf = p->xfxQ(pid, x, q);
           pdfin[iq][ix][ifl][ninput] = 3. * pow(x, 2. / 3.) * xf;
 
@@ -930,10 +973,10 @@ int MCStdDevs()
   const int nfltot = inflavors.size(); // Maximal number of PDF flavors in
   // Create a copy of the original array
   std::vector<int> outflavors(nfltot);
-  std::copy(inflavors.begin(), inflavors.end(), outflavors.begin());
+  //std::copy(inflavors.begin(), inflavors.end(), outflavors.begin());
 
   //lk23 sort inflavors in plt format
-  std::sort(inflavors.begin(), inflavors.end(), pltSort);
+  //std::sort(inflavors.begin(), inflavors.end(), pltSort);
 
   // Replace 21 with 0 in the copy
   for (int i = 0; i < nfltot; ++i)
@@ -1014,19 +1057,6 @@ int MCStdDevs()
   outfile.clear();
   outfile.close();
 
-  // lk24 Create output file with flavor indices, x values, and q values on each line in one file
-  outfile.open("flavor_x_q_output.txt");
-  for (int i = 0; i < nfltot; ++i)
-    outfile << inflavors[i] << " ";
-  outfile << endl;
-  for (int i = 0; i < nxtot; ++i)
-    outfile << xgrid[i] << " ";
-  outfile << endl;
-  for (int i = 0; i < nqtot; ++i)
-    outfile << qgrid[i] << " ";
-  outfile << endl;
-  outfile.close();
-
   // Read hardwired x values for .int file
   string fname = "../inc/evo-xg.gd";
   infile.open(fname.c_str());
@@ -1078,7 +1108,7 @@ int MCStdDevs()
         for (int ifl = 0; ifl < nfltot; ++ifl)
         {
 
-          int pid = inflavors[ifl];
+          int pid = outflavors[ifl];
           const double xf = p->xfxQ(pid, x, q);
           pdfin[iq][ix][ifl][ninput] = 3. * pow(x, 2. / 3.) * xf;
 
@@ -1304,3 +1334,5 @@ bool pltSort(int a, int b)
   // If absolute values are different, sort by their absolute value
   return abs_a < abs_b;
 } // pltSort ->
+
+
