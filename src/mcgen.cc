@@ -704,7 +704,7 @@ int MCLHAPDF2plt()
 
   //lk23 added routine to add and subtract 0.005 GeV to repeating Q values
   double epsilon = 0.005;
-  for (int i = 0; i < nqtot - 1; ++i)
+  for (int i = 0; i < nqintot - 1; ++i)
   {
     if (qingrid[i] == qingrid[i + 1])
     {
@@ -811,9 +811,28 @@ int MCLHAPDF2plt()
   
   
   // lk23 write the x, q, and flavors to the output file
-  outfile.open("flavor_output.txt");
+  outfile.open("flavor_input.txt");
   for (int i = 0; i < nfltot; ++i)
     outfile << inflavors[i] << endl;
+  outfile.clear();
+  outfile.close();
+
+  outfile.open("x_input.txt");
+  for (int i = 0; i < nxintot; ++i)
+    outfile << xingrid[i] << endl;
+  outfile.clear();
+  outfile.close();
+
+  outfile.open("q_input.txt");
+  for (int i = 0; i < nqintot; ++i)
+    outfile << qingrid[i] << endl;
+  outfile.clear();
+  outfile.close();
+
+  // lk25 write the x, q, and flavors used in plt output
+  outfile.open("flavor_output.txt");
+  for (int i = 0; i < nfltot; ++i)
+    outfile << outflavors[i] << endl;
   outfile.clear();
   outfile.close();
 
@@ -946,6 +965,10 @@ int MCStdDevs()
   double num, ErrorScaling, auxu, auxd;
   int nxtot = 0, nixtot = 0, nqtot = 0, ierr;
 
+  // lk25 added input values for x and q from lhapdf
+  vector<double> xingrid, qingrid; // Vectors with x and Q values
+  int nxintot = 0, nqintot = 0;
+  
   ifstream infile;                 // input file stream
   ofstream outfile, outerrfile[3]; // output file streams
 
@@ -992,31 +1015,31 @@ int MCStdDevs()
     if (outflavors[i] == 0)
       outflavors[i] = 21;
 
-   /*
+   
   // lk23 Get the the x and q2 values from the 0th grid
   int member_index = 0; // 0 corresponds to the central PDF
   const LHAPDF::GridPDF *grid_pdf = dynamic_cast<const LHAPDF::GridPDF *>(set.mkPDF(member_index));
   const vector<double> x_vals = grid_pdf->xKnots();
-  nxtot = x_vals.size();
-  for (int i = 0; i < nxtot; ++i)
-    xgrid.push_back(x_vals[i]);
+  nxintot = x_vals.size();
+  for (int i = 0; i < nxintot; ++i)
+    xingrid.push_back(x_vals[i]);
 
   const vector<double> q2_vals = grid_pdf->q2Knots();
-  nqtot = q2_vals.size();
-  for (int i = 0; i < nqtot; ++i)
-    qgrid.push_back(sqrt(q2_vals[i]));
+  nqintot = q2_vals.size();
+  for (int i = 0; i < nqintot; ++i)
+    qingrid.push_back(sqrt(q2_vals[i]));
 
   //lk23 added routine to add and subtract 0.005 GeV to repeating Q values
   double epsilon = 0.005;
-  for (int i = 0; i < nqtot - 1; ++i)
+  for (int i = 0; i < nqintot - 1; ++i)
   {
-    if (qgrid[i] == qgrid[i + 1])
+    if (qingrid[i] == qingrid[i + 1])
     {
-      qgrid[i+1] += epsilon;
-      qgrid[i] -= epsilon;
+      qingrid[i+1] += epsilon;
+      qingrid[i] -= epsilon;
     }
   }
-  */
+  
 
   //lk24 changed x and q values to be read from external file and not grid
   //Read hardwired x values for .plt files
@@ -1040,9 +1063,28 @@ int MCStdDevs()
   infile.close();
 
   // lk23 write the x, q, and flavors to the output file
-  outfile.open("flavor_output.txt");
+  outfile.open("flavor_input.txt");
   for (int i = 0; i < nfltot; ++i)
     outfile << inflavors[i] << endl;
+  outfile.clear();
+  outfile.close();
+
+  outfile.open("x_input.txt");
+  for (int i = 0; i < nxintot; ++i)
+    outfile << xingrid[i] << endl;
+  outfile.clear();
+  outfile.close();
+
+  outfile.open("q_input.txt");
+  for (int i = 0; i < nqintot; ++i)
+    outfile << qingrid[i] << endl;
+  outfile.clear();
+  outfile.close();
+
+  // lk25 write the x, q, and flavors used in plt output
+  outfile.open("flavor_output.txt");
+  for (int i = 0; i < nfltot; ++i)
+    outfile << outflavors[i] << endl;
   outfile.clear();
   outfile.close();
 
