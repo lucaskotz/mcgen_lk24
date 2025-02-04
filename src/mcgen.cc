@@ -777,7 +777,7 @@ int MCLHAPDF2plt()
   */
 
   // lk25 create .mev file v.2025-02 from Pavel
-  outfile.open(inpdfname + ".mev");
+  outfile.open(inpdfname + ".mev_header");
   outfile << "#v.2025-02# .mev file created from " + inpdfname + "LHAPDF set" << endl;
   outfile << orderqcdin << ", " << Q0in << ", " << alphasMZin << ", " << mzin << " # QCD order ,Q0 (GeV), alphas(MZ), MZ" << endl;
   outfile << mcin << ", " << mbin << ", " << mtin << " # mcharm, mbottom, mtop (GeV)" << endl;
@@ -795,16 +795,17 @@ int MCLHAPDF2plt()
   for (int i = 0; i < nqtot-1; i++)
     outfile << qgrid[i] << "\t";
   outfile << qgrid[nqtot-1] << endl;
-  for (int imem = 0; imem < NEVin + 1; imem++)
-  {
-    outfile << "# EV set " << imem << "---" << endl;
-    for (int ifl = 0; ifl < nfltot; ifl++)
-    {
-      for (int ix = 0; ix < nxtot-1; ix++)
-	outfile << "[" << outflavors[ifl] << "][" << ix << "]\t";
-      outfile << "[" << outflavors[ifl] << "][" << nxtot-1 << "]" << endl;
-    }
-  }
+  // lk25 commented out to print out just the header for mp4lhc
+  // for (int imem = 0; imem < NEVin + 1; imem++)
+  // {
+  //   outfile << "# EV set " << imem << "---" << endl;
+  //   for (int ifl = 0; ifl < nfltot; ifl++)
+  //   {
+  //     for (int ix = 0; ix < nxtot-1; ix++)
+  // 	outfile << "[" << outflavors[ifl] << "][" << ix << "]\t";
+  //     outfile << "[" << outflavors[ifl] << "][" << nxtot-1 << "]" << endl;
+  //   }
+  // }
   outfile.clear();
   outfile.close();
   
