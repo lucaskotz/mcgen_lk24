@@ -115,13 +115,13 @@ int main(int argc, char *argv[])
 	pdg_id = stoi(argv[4]);
     }
     // check if plt_rep is not "physical" or "sunf"
-    if (plt_rep != "physical" || plt_rep != "sunf")
+    if (plt_rep != "physical" && plt_rep != "sunf")
     {
       cout << "plt representation: " << plt_rep << " is not a supported option.\nUse physical or sunf representation for plt files." << endl;
       exit(1);
     }
     // check to see if pdg_id is allowed option
-    if (pdg_id != 2212 || pdg_id != 211 || pdg_id != 321)
+    if (pdg_id != 2212 && pdg_id != 211 && pdg_id != 321)
     {
       cout << "pdg_id = " << pdg_id << " is not a supported particle.\nUse proton=2212, pi+=211, or K+=321." << endl;
       exit(1);      
@@ -703,8 +703,6 @@ int MCLHAPDF2plt()
     if (outflavors[i] == 0)
       outflavors[i] = 21;  
 
-  for (int i = 0; i < nfltot; i++)
-    cout << outflavors[i] << " " << endl;
 
   // todo:
   // lk25 write header file that stores the map of SU(Nf) representation based off physical representation.
@@ -975,6 +973,9 @@ int MCLHAPDF2plt()
 	        case 321: //K+
 		  q1fl = 2; q2fl = -3; q3fl = 1; q4fl = 4; q5fl = 5;
 		  break;
+	        default:
+		  cout << "PDG ID = " << pdg_id << " PDF set not supported." << endl;
+		  exit(1);
 	    } // add more particles here
 	    vector<int> qvec = {q1fl,q2fl,q3fl,q4fl,q5fl};
 
