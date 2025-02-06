@@ -901,7 +901,10 @@ int MCLHAPDF2plt()
     }
   }
   */
-  
+  // set number of flavors to 11 if using SU(Nf) representation. Otherwise, use the max allowed physical flavors from LHA grid.
+  if (plt_rep == "sunf")
+    nfltot = 11;
+
   // Prepare an array pdfin to store input PDFs (nqtot x nxtot x nfltot)
   pdfin.resize(nqtot);
 
@@ -1027,10 +1030,6 @@ int MCLHAPDF2plt()
 
       delete p;
   } // foreach (LHAPDF::PDF* p, pdfs)
-
-  // lk25 change nfltot for output
-  if (plt_rep == "sunf")
-    nfltot = 11;
 
   // Create .plt file for each input replica.
   // imc denotes the ID of the output MC replica.
