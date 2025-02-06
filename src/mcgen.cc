@@ -18,6 +18,7 @@
 //
 //
 // History
+// 2025-02-06 LK Included routine to select physical or SU(Nf) representation for plt output
 // 2023       LK Modified functions to be more dynamic by reading LHAPDF data
 //               Routines include NQ subgrids instead of just 1 for Q0.
 //               Q, x, and flavors are exported to external files for 
@@ -55,6 +56,8 @@ string xlhaname = "../inc/xgrid-lha6.dat", qlhaname = "../inc/qgrid-lha6.dat",
 unsigned short int nmc = 100, nstart = 1;
 short int nsym = 1, nshift = 0, ktype = 1;
 const double small = 1.0e-10;
+// lk25 added global variables for plt_representation and PDG_ID for the "convert" option
+string plt_rep = "physical"; int pdg_id = 2212;
 
 int MCread_card();
 int MCGenerateLHAPDF();
@@ -64,6 +67,8 @@ int MCaverage(int argc, char *argv[]);
 int MCadd(int argc, char *argv[]);
 // lk23 added function to sort flavors in plt order
 bool pltSort(int a, int b);
+// lk25 added new functions used in MCLHAPDF2plt
+string getLHAInfoValue(const LHAPDF::PDFInfo& pdfInfo, const string& variableName);
 
 int main(int argc, char *argv[])
 {
@@ -72,7 +77,7 @@ int main(int argc, char *argv[])
   {
     cout << "Usage examples" << endl;
     cout << "   mcgen.x generate mcgen.card" << endl;
-    cout << "   mcgen.x convert LHAPDF_set" << endl;
+    cout << "   mcgen.x convert LHAPDF_set [plt_representation=physical] [PDG_ID=2212(proton)]" << endl;
     cout << "   mcgen.x std_devs LHAPDF_set error_type" << endl;
     cout << "   mcgen.x average average.dat input1.dat input2.dat ..." << endl;
     cout << "   mcgen.x add sum.dat input1.dat input2.dat w1 w2" << endl;
@@ -91,7 +96,36 @@ int main(int argc, char *argv[])
   else if (strcmp(argv[1], "convert") == 0)
   { // Create .plt grids from
     // LHAPDF6 grids
+    // lk25 added additional options to choose plt representation
+    //      plt_representation dictates whether to use the physical or general SU(Nf) representation for the .plt flavors.
+    //      PDG_ID is not required if the particle ID is defined within the LHAPDF info file. If not included as an argument,
+    //      mcgen assumes the LHAPDF input set is for the proton.
+    //      By default, mcgen assumes the plt flavors are in the physical representation.
+    if (argc < 3)
+    {
+      cout << "Stop: too few parameters passed to mcgen" << endl;
+      cout << "Usage: mcgen.x convert LHAPDF_set [plt_representation=physical] [PDG_ID=2212]" << endl;
+    }
     inpdfname = argv[2];
+    // lk25
+    if (argc >= 4)
+    {
+      plt_rep = argv[3];
+      if (argc == 5)
+	pdg_id = stoi(argv[4]);
+    }
+    // check if plt_rep is not "physical" or "sunf"
+    if (plt_rep != "physical" || plt_rep != "sunf")
+    {
+      cout << "plt representation: " << plt_rep << " is not a supported option.\nUse physical or sunf representation for plt files." << endl;
+      exit(1);
+    }
+    // check to see if pdg_id is allowed option
+    if (pdg_id != 2212 || pdg_id != 211 || pdg_id != 321)
+    {
+      cout << "pdg_id = " << pdg_id << " is not a supported particle.\nUse proton=2212, pi+=211, or K+=321." << endl;
+      exit(1);      
+    }
     MCLHAPDF2plt();
   }
   else if (strcmp(argv[1], "std_devs") == 0)
@@ -649,10 +683,11 @@ int MCLHAPDF2plt()
   // lk23 pull flavors from grid
   std::vector<int> inflavors = pdfs[0]->flavors();
   // PDF flavors to write to the LHAPDF grid
-  const int nfltot = inflavors.size(); // Maximal number of PDF flavors
+  int nfltot = inflavors.size(); // Maximal number of PDF flavors
   // lk24 created to match META representation
   std::vector<int> outflavors = inflavors;
 
+  
 
   // lk25 sort flavors to fit temporary META representation
   // Replace 21 with 0 in the copy
@@ -670,6 +705,12 @@ int MCLHAPDF2plt()
 
   for (int i = 0; i < nfltot; i++)
     cout << outflavors[i] << " " << endl;
+
+  // todo:
+  // lk25 write header file that stores the map of SU(Nf) representation based off physical representation.
+  // lk25 allow for the option to add the particle ID as an argument for "convert". if no argument is defined, then mcgen will try to pull "PArticle" from info file
+  //      if not, then it will define it as the argument.
+  // lk25 implement option to use physical or SU(Nf) representation as an argument in the command line.
   
   // // Order LHAPDF flavor indices in PDF flavor order (u<->d)
   // for (int i = 0; i < inflavors.size(); i++)
@@ -734,25 +775,28 @@ int MCLHAPDF2plt()
   infile.clear();
   infile.close();
 
+  //lk25 added LHAPDF::Info object to track if optional parameters are defined (i.e. mc,mb,mt, mz, pdg id)
+  const LHAPDF::PDFInfo info(inpdfname,0);
   
-
   // lk24 parse mc, mb, mt, alphas_MZ, MZ, alphas_OrderQCD, NumFlavors, and OrderQCD using get_entry()   
-  double mcin = stod(set.get_entry("MCharm"));
-  double mbin = stod(set.get_entry("MBottom"));
-  double mtin = stod(set.get_entry("MTop"));
-
-  double alphasMZin = stod(set.get_entry("AlphaS_MZ"));
-  double mzin = stod(set.get_entry("MZ"));
-  int alphas_orderin = stoi(set.get_entry("AlphaS_OrderQCD"));
-
-  int NumFlavsin = stoi(set.get_entry("NumFlavors"));
-  int orderqcdin = stoi(set.get_entry("OrderQCD"));
-
+  // parse mandatory flags from .info file
+  string alphasMZin = info.get_entry("AlphaS_MZ");
+  string alphas_orderin = info.get_entry("AlphaS_OrderQCD");
+  string NumFlavsin = info.get_entry("NumFlavors");
+  string orderqcdin = info.get_entry("OrderQCD");
   // lk25 added Q0, number of EV sets, and PDG hadron ID for the new .mev format
-  double Q0in = stod(set.get_entry("QMin"));
-  int NEVin = stoi(set.get_entry("NumMembers")) - 1; 
-  //int iPDGin = stoi(set.get_entry("Particle"));
-  
+  string Q0in = info.get_entry("QMin");
+  int NEVin = stoi(info.get_entry("NumMembers")) - 1; 
+
+  // parse optional flags from .info file if present
+  string mcin = getLHAInfoValue(info, "MCharm");
+  string mbin = getLHAInfoValue(info, "MBottom");
+  string mtin = getLHAInfoValue(info, "MTop");
+  string mzin = getLHAInfoValue(info, "MZ");
+  string pdg_idstr = getLHAInfoValue(info, "Particle");
+  if (pdg_idstr != "Particle")
+    pdg_id = stoi(pdg_idstr);
+    
   // lk25 commented out config file
   /*
   // lk24 write the xin, qin, and flavors to the output file
@@ -781,11 +825,12 @@ int MCLHAPDF2plt()
   outfile << "#v.2025-02# .mev file created from " + inpdfname + "LHAPDF set" << endl;
   outfile << orderqcdin << ", " << Q0in << ", " << alphasMZin << ", " << mzin << " # QCD order ,Q0 (GeV), alphas(MZ), MZ" << endl;
   outfile << mcin << ", " << mbin << ", " << mtin << " # mcharm, mbottom, mtop (GeV)" << endl;
-  outfile << NEVin << ", iPDG # Number of EV sets, PDG hadron ID (2212=proton, 211=pi+)" << endl;
+  outfile << NEVin << ", " << pdg_id << " # Number of EV sets, PDG hadron ID (2212=proton, 211=pi+)" << endl;
   outfile << "# Flavors in the LHAPDF grid and compressed META representation" << endl;
   for (int i = 0; i < nfltot-1; i++)
     outfile << outflavors[i] << ", ";
   outfile << outflavors[nfltot-1] << endl;
+  // lk25 must decide whether to use x and Qs from LHA grids or user-defined values 
   outfile << "# enter META representation here" << endl; //lk25 replace line with either evolution basis IDs or physical
   outfile << "# x values:" << endl;
   for (int i = 0; i < nxtot-1; i++)
@@ -886,23 +931,105 @@ int MCLHAPDF2plt()
       double q = qgrid[iq];
       for (int ix = 0; ix < nxtot; ++ix)
       {
-        double x = xgrid[ix];
+	double x = xgrid[ix];
+	for (int ifl = 0; ifl < nfltot; ++ifl)
+	{
+	  double xf;
+	  if (plt_rep == "physical")
+	  {
+	    int pid = outflavors[ifl];
+	    xf = p->xfxQ(pid, x, q);
+	  }
+	  if (plt_rep == "sunf")
+	  //      The list of flavors in SU(Nf) representation are:
+	  //        g
+	  //        Sigma singlet  (Sum(q_i+q_i^c))
+	  //        5 "-" non-singlets (q_{i,-}=q_i-q_i^c)
+	  //        T3^c = (q_2^c - q_1^c)
+	  //        T8^c = 2*q_{3}^c - q_{1}^c - q_{2}^c
+	  //        T15^c = 3*q_4^c - q_1^c - q_2^c - q_3^c
+	  //        T24^c = 4*q_5^c - q_1^c - q_2^c - q_3^c - q_4^c
+	  //      where c represents the charge-conjugate of the corresponding particle.
+	  //      q1, q2, q3, q4, q5 are defined based off the particle. A table is listed below.
+	  //
+	  //      q_i    proton    pi^+    K^+
+	  //
+	  //      q_1         u       u      u
+	  //      q_2         d    dbar   sbar
+	  //      q_3         s       s      d
+	  //      q_4         c       c      c
+	  //      q_5         b       b      b
+	  //
+	  //      LHAPDF uses the PDG Monte Carlo numbering scheme (d=1, u=2, s=3, c=4, b=5)
+	  {
+	    int Nqi = 5; // number of qis
+	    int q1fl, q2fl, q3fl, q4fl, q5fl; // corresponding PDG ID for qi  
+	    switch (pdg_id) // assign PDG ID to qi dependent on LHA particle ID
+	    {
+	        case 2212: //proton
+		  q1fl = 2; q2fl = 1; q3fl = 3; q4fl = 4; q5fl = 5;
+		  break;
+	        case 211: //pi+
+		  q1fl = 2; q2fl = -1; q3fl = 3; q4fl = 4; q5fl = 5;
+		  break;
+	        case 321: //K+
+		  q1fl = 2; q2fl = -3; q3fl = 1; q4fl = 4; q5fl = 5;
+		  break;
+	    } // add more particles here
+	    vector<int> qvec = {q1fl,q2fl,q3fl,q4fl,q5fl};
 
-        for (int ifl = 0; ifl < nfltot; ++ifl)
-        {
+	    // assign xf value dependent on current ifl
+	    if (ifl == 0) // g
+	      xf = p->xfxQ(21, x, q);
+	    
+	    if (ifl == 1) // Sigma
+	    {
+	      double xftmp = 0.0; // Initialize xftmp before the loop
+	      for (int i = 0; i < qvec.size(); i++)
+	      {
+		int qi = qvec[i];
+		int qic = -qi;
+		xftmp += (p->xfxQ(qi, x, q) + p->xfxQ(qic, x, q));
+	      }
+	      double xfweight = 1. / Nqi;
+	      xf = xfweight * xftmp;
+	    } // if (ifl == 1) ->
+	    
+	    if (ifl > 1 && ifl < 7) // q_{i,-}
+	    {
+	      int iqfl = qvec[ifl-2];
+	      xf = (p->xfxQ(iqfl, x, q) - p->xfxQ(-iqfl, x, q));
+	    } // (ifl > 1 && ifl < 7) ->
 
-          int pid = outflavors[ifl];
-          const double xf = p->xfxQ(pid, x, q);
-          pdfin[iq][ix][ifl][ninput] = 3. * pow(x, 2. / 3.) * xf;
+	    if (ifl == 7) // T3c
+	      xf = (p->xfxQ(-q2fl, x, q) - p->xfxQ(-q1fl, x, q));
 
-        } // for (int ifl
+	    if (ifl == 8) // T8c
+	      xf = (2*p->xfxQ(-q3fl, x, q) - p->xfxQ(-q1fl, x, q) - p->xfxQ(-q2fl, x, q));
+
+	    if (ifl == 9 ) // T15c
+	      xf = (3*p->xfxQ(-q4fl, x, q) - p->xfxQ(-q1fl, x, q) - p->xfxQ(-q2fl, x, q) - p->xfxQ(-q3fl, x, q));
+	    
+	    if (ifl == 10) // T24c
+	      xf = (4* p->xfxQ(-q5fl, x, q) - p->xfxQ(-q1fl, x, q) - p->xfxQ(-q2fl, x, q) - p->xfxQ(-q3fl, x, q) - p->xfxQ(-q4fl, x, q));
+	  } // if (plt_rep == sunf)
+	    
+	    
+	    pdfin[iq][ix][ifl][ninput] = 3. * pow(x, 2. / 3.) * xf;
+	    
+	} // for (int ifl
+	  
       } //  for (int ix
     } // for (int iq=0
 
-    ninput++;
+      ninput++;
 
-    delete p;
+      delete p;
   } // foreach (LHAPDF::PDF* p, pdfs)
+
+  // lk25 change nfltot for output
+  if (plt_rep == "sunf")
+    nfltot = 11;
 
   // Create .plt file for each input replica.
   // imc denotes the ID of the output MC replica.
@@ -926,8 +1053,11 @@ int MCLHAPDF2plt()
     {
       double qq = qgrid[iq];
       outfile << "#   Q = " << setw(15) << scientific << setprecision(6) << qq << endl;
-      outfile << "# ZZ\tx\tbbar\tcbar\tsbar\tubar\tdbar\tg\td\tu\ts\tc\tb" << endl;
-
+      if (plt_rep == "physical")
+	outfile << "# ZZ\tx\tbbar\tcbar\tsbar\tubar\tdbar\tg\td\tu\ts\tc\tb" << endl;
+      if (plt_rep == "sunf")
+	outfile << "# ZZ\tx\tg\tSigma\tq1-\tq2-\tq3-\tq4-\tq5-\tT3c\tT8c\tT15c\tT24c" << endl;
+      
       for (int ix = 0; ix < nxtot; ++ix)
       {
 
@@ -1378,4 +1508,16 @@ bool pltSort(int a, int b)
   return abs_a < abs_b;
 } // pltSort ->
 
-
+// lk25 added function to parse optional flags in LHAPDF .info file if they are defined in the .info file
+//      and return a string of the variable name as a placeholder if they are not.
+string getLHAInfoValue(const LHAPDF::PDFInfo& pdfInfo, const string& variableName)
+{
+  if (pdfInfo.has_key(variableName))
+  {
+    return pdfInfo.get_entry(variableName);
+  }
+  else
+  {
+    return variableName;
+  }
+} // getLHAInfoValue() ->
