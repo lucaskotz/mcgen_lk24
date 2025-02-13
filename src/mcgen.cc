@@ -826,8 +826,8 @@ int MCLHAPDF2plt()
   outfile << NEVin << ", " << pdg_id << " # Number of EV sets, PDG hadron ID (2212=proton, 211=pi+)" << endl;
   outfile << "# Flavors in the LHAPDF grid and compressed META representation" << endl;
   for (int i = 0; i < nfltot-1; i++)
-    outfile << outflavors[i] << ", ";
-  outfile << outflavors[nfltot-1] << endl;
+    outfile << inflavors[i] << ", ";
+  outfile << inflavors[nfltot-1] << endl;
   // lk25 must decide whether to use x and Qs from LHA grids or user-defined values 
   outfile << "# enter META representation here" << endl; //lk25 replace line with either evolution basis IDs or physical
   outfile << "# x values:" << endl;
